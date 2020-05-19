@@ -91,7 +91,7 @@ denormalized
 
 Combined with the previous graph, we can see there is a steady increase in the number of reported female victims and a spike in cases in 2016. The spike may also reflect the fact that the data is incomplete, and there are a lot more unreported cases.
 
-### 2.2 Comparing Gender in Different Labor Workforces
+### 2.2 Comparing Gender in Different Labor Sectors
 Now we would like to see how registered victims of labor exploitation vary in gender by field. We will build upon what we've learned previously and create a separate graph for each labor field.
 
 #### 2.2.1 Male vs. Female Registered Exploitation in Agriculture
