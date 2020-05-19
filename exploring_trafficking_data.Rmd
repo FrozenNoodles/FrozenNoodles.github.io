@@ -1,0 +1,254 @@
+---
+title: "How Incomplete Data Can Still Help in Better Understanding and Combating Human Trafficking "
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+### Data Source: The Counter Trafficking Data Collaborative
+### Audrey Tarn, Jiaming Yao
+### May 2020
+
+# Introduction
+From the United Nations, human trafficking is the "recruitment, transportation, transfer, harbouring or receipt of persons" through the "threat or use of force ... for the purpose of exploitation" (https://www.unodc.org/unodc/en/human-trafficking/what-is-human-trafficking.html). While it is a rampant issue that touches many aspects of all of our lives, there are many misconceptions about it which often hinders our reaction to it. On the other hand, its complexity makes it very difficult to document to grasp a clear picture. One example is in data collection. Nevertheless, organizations like Polaris, who also runs the national human trafficking hotline in the United States, continue to gather as much data as possible which have still been quite revealing. You can read more about Polaris at https://polarisproject.org/ and learn about common human trafficking misconceptions at https://polarisproject.org/myths-facts-and-statistics/.  
+
+In this tutorial, we will walk through a data science pipeline in R to learn some information from the data collected by the Counter Trafficking Data Collaborative, a collaborative effort that includes organizations like Polaris, the International Organization for Migration, and Liberty Shared.  
+
+# Table of Contents  
+1. Data Preparation  
+2. Data Analysis and Visualization  
+3. Linear Regression and Hypothesis Testing  
+4. Further Analysis
+
+# 1. Data Preparation  
+First, we need to download our data. You can download it from https://www.ctdatacollaborative.org/node/153/download. Download it into the same folder as your code. We will name the file "trafficking_dataset.csv". You can find more information on the contents of the dataset at https://www.ctdatacollaborative.org/download-global-dataset.
+
+### 1.1 Libraries  
+Before getting started we also need to import all the libraries that are required for this project. Information about each library used in this tutorial can be found at https://www.rdocumentation.org/.
+```{r library, message = FALSE}
+library(tidyverse)
+library(rvest)
+library(dplyr)
+library(ggplot2)
+library(broom)
+```
+
+### 1.2 Loading Data  
+To use our downloaded dataset, we need to load it into our program. We will use read_csv() from the readr package to load our CSV file. Documentation on readr can be found at https://readr.tidyverse.org/reference/read_delim.html.
+```{r load_dataset}
+data <- read.csv("trafficking_dataset.csv")
+```
+
+### 1.3 Viewing Data  
+To see what our data looks like, we can use head() to view the first n rows of our dataset. Documentation on head can be found at https://www.rdocumentation.org/packages/utils/versions/3.6.2/topics/head
+```{r view_dataset}
+head(data, n = 10)
+```
+
+### 1.4 Tidying Data
+Luckily for us, our dataset is quite neat which is often not the case. For this tutorial, we will only look at time, gender, age ranges, and different ways individuals were exploited for labor. We will trim down our dataset and only keep the columns we need. 
+```{r drop_cols}
+data_tab <- data %>%
+  select("yearOfRegistration", "gender", "ageBroad", "typeOfLabourAgriculture", "typeOfLabourAquafarming", "typeOfLabourBegging", "typeOfLabourConstruction", "typeOfLabourDomesticWork", "typeOfLabourHospitality", "typeOfLabourManufacturing", "typeOfLabourPeddling")
+head(data_tab, n = 10)
+```
+You may have noticed -99 appearing in many entries. In this case, this stands for missing data. Instead of keeping an ambiguous number, we will change it to "NA".
+```{r clean_nulls}
+data_tab[data_tab == -99] <- NA
+head(data_tab, n = 10)
+```
+
+# 2. Visualization and Data Analysis
+Now that we have tidied up our data, we can create all sorts of visualizations from it that can give us interesting insights.
+
+### 2.1 Male vs. Female Reported Cases Over Time
+We want to see if more male cases are reported or female cases and how this has fluctuated over time. To do this, we need to select the relevant columns and group cases by gender and year then count how many are male and how many are female.  
+```{r gender_over_time}
+gender_year <- data_tab %>%
+  select(Year = yearOfRegistration, Gender = gender) %>%
+  group_by(Year, Gender) %>%
+  summarize(Count = n())
+gender_year
+```
+To better see this comparison, we will put our results in a graph using ggplot. You can learn more about crafting bar plots at http://www.sthda.com/english/wiki/ggplot2-barplots-quick-start-guide-r-software-and-data-visualization.
+```{r graph_gender_over_time}
+graph <- gender_year %>%
+  ggplot(aes(fill = Gender, x = factor(Year), y = Count)) +
+  geom_bar(position = "fill", stat = "identity") +
+  labs(title = "Male vs. Female Registered Cases Over Time", x = "Registered Year", y = "Ratio")
+graph
+```
+
+We can see that in most years, more female cases are being registered than male cases. However, in the years 2010, 2012, and 2013 there was almost an equal amount of reporting between these two genders. While at face value it may seem like there are more female victims of trafficking than male victims, it is important to keep in mind the many external variables beyond our control. For example, if male victims are for some reason less likely to call the trafficking hotline, the data contributed by Polaris could be more skewed towards female victims which can skew the overall data.  The fact that there are no male registered cases in year 2002, 2004, 2019 is quite alarming.
+
+Let's look at the exact number of registered cases without normalizing them.
+```{r gender_overtime2}
+denormalized <- gender_year %>%
+  ggplot(aes(fill = Gender, x = factor(Year), y = Count)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Denormalized Male vs. Female Registered Cases Over Time", x = "Registered Year", y = "Number of Cases")
+denormalized
+```
+
+We can see there is a steady increase in the number of reported female victims and a spike in reported cases in 2016.
+
+### 2.2 Comparing Gender in Different Labor Sectors
+Now we would like to see how registered victims of labor exploitation vary in gender by field. We will build upon what we've learned previously and create a separate graph for each labor field.
+
+#### 2.2.1 Male vs. Female Registered Exploitation in Agriculture
+```{r gender_labor_agriculture}
+agri <- data_tab %>%
+  select(Gender = gender, typeOfLabourAgriculture) %>%
+  filter(typeOfLabourAgriculture == 1) %>%
+  group_by(Gender) %>%
+  summarize(n = n())
+graph_agri <- agri %>%
+  ggplot(aes(fill = Gender,x = Gender, y = n)) +
+  geom_bar(stat = 'identity') + 
+  labs(title = "Male vs. Female Registered Exploitation in Agriculture")
+graph_agri
+```
+
+#### 2.2.2 Male vs. Female Registered Exploitation in Aquafarming
+```{r gender_labor_aquafarming}
+aqua <- data_tab %>%
+  select(Gender = gender, typeOfLabourAquafarming) %>%
+  filter(typeOfLabourAquafarming == 1) %>%
+  group_by(Gender) %>%
+  summarize(n = n())
+graph_aqua <- aqua %>%
+  ggplot(aes(fill = Gender, x = Gender, y = n)) +
+  geom_bar(stat = 'identity') + 
+  labs(title = "Male vs. Female Registered Exploitation in Aquafarming")
+graph_aqua
+```
+
+#### 2.2.3 Male vs. Female Registered Exploitation in Begging
+```{r gender_labor_begging}
+beg <- data_tab %>%
+  select(Gender = gender, typeOfLabourBegging) %>%
+  filter(typeOfLabourBegging == 1) %>%
+  group_by(Gender) %>%
+  summarize(n = n())
+graph_beg <- beg %>%
+  ggplot(aes(fill = Gender, x = Gender, y = n)) +
+  geom_bar(stat = 'identity') + 
+  labs(title = "Male vs. Female Registered Exploitation in Begging")
+graph_beg
+```
+
+#### 2.2.4 Male vs. Female Registered Exploitation in Construction
+```{r gender_labor_construction}
+construct <- data_tab %>%
+  select(Gender = gender, typeOfLabourConstruction) %>%
+  filter(typeOfLabourConstruction == 1) %>%
+  group_by(Gender) %>%
+  summarize(n = n())
+graph_construct <- construct %>%
+  ggplot(aes(fill = Gender, x = Gender, y = n)) +
+  geom_bar(stat = 'identity') + 
+  labs(title = "Male vs. Female Registered Exploitation in Construction")
+graph_construct
+```
+
+#### Male vs. Female Registered Exploitation in Domestic Work
+```{r gender_labor_domestic}
+domestic <- data_tab %>%
+  select(Gender = gender, typeOfLabourDomesticWork) %>%
+  filter(typeOfLabourDomesticWork == 1) %>%
+  group_by(Gender) %>%
+  summarize(n = n())
+graph_domestic <- domestic %>%
+  ggplot(aes(fill = Gender, x = Gender, y = n)) +
+  geom_bar(stat = 'identity') +
+  labs(title = "Male vs. Female Registered Exploitation in Domestic Work")
+graph_domestic
+```
+
+#### Male vs. Female Registered Exploitation in Hospitality
+```{r gender_labor_hospitality}
+hospitality <- data_tab %>%
+  select(Gender = gender, typeOfLabourHospitality) %>%
+  filter(typeOfLabourHospitality == 1) %>%
+  group_by(Gender) %>%
+  summarize(n = n())
+graph_hospitality <- hospitality %>%
+  ggplot(aes(fill = Gender, x = Gender, y = n)) +
+  geom_bar(stat = 'identity') + 
+  labs(title = "Male vs. Female Registered Exploitation in Hospitality")
+graph_hospitality
+```
+
+#### Male vs. Female Registered Exploitation in Manufacturing
+```{r gender_labor_manufacturing}
+manufacture <- data_tab %>%
+  select(Gender = gender, typeOfLabourManufacturing) %>%
+  filter(typeOfLabourManufacturing == 1) %>%
+  group_by(Gender) %>%
+  summarize(n = n())
+graph_manufacture <- manufacture %>%
+  ggplot(aes(fill = Gender, x = Gender, y = n)) +
+  geom_bar(stat = 'identity') + 
+  labs(title = "Male vs. Female Registered Exploitation in Manufacturing")
+graph_manufacture
+```
+
+#### Male vs. Female Registered Exploitation in Peddling
+```{r gender_labor_peddling}
+peddle <- data_tab %>%
+  select(Gender = gender, typeOfLabourPeddling) %>%
+  filter(typeOfLabourPeddling == 1) %>%
+  group_by(Gender) %>%
+  summarize(n = n())
+graph_peddle <- peddle %>%
+  ggplot(aes(fill = Gender, x = Gender, y = n)) +
+  geom_bar(stat = 'identity') + 
+  labs(title = "Male vs. Female Registered Exploitation in Peddling")
+graph_peddle
+```
+
+Besides seeing that the registered victims come from a diverse array of legitimate labor fields, it also seems that different labor fields may prefer a certain gender while other fields have less of a preference.  
+
+# 3. Linear Regression and Hypothesis Testing
+Besides visualizing our data, sometimes we may also want to predict future trends. Common methods used to predict the future based on current data are linear regression, tree based methods, and machine learning. For our case, we will use the linear regression in part due to a lack of representative data which doing meaningful machine learning would require more of.
+
+First we'll assume there is a linear relationship between the number of cases and time. The lm function is handy for fitting linear models. You can read more about it at https://www.rdocumentation.org/packages/stats/versions/3.6.2/topics/lm.
+
+```{r cases}
+tot <- data_tab %>%
+  group_by(Year = yearOfRegistration) %>%
+  summarize(n = n()) 
+
+fit <- lm(n ~ Year, data = tot)
+fit %>% tidy()
+```
+
+One way to understand what we have here is to recall that a linear relationship has the form y = ax+b. Our "y" is the number of registered cases - the value we want to predict. The intercept is b, the bias, and x is the year of registration. Our growth estimate is "a". Since the estimate here is around 367 cases, we can say that it seems the number of registered cases is increasing at a rate of 367 per year.
+
+In hypothesis testing, we have a null hypothesis which typically states there is no significant relationship between a variable and our value of interest. In this case our null hypothesis is that there is no relationship between time and the amount of registered cases. Our alternative hypothesis then is that there is some relationship between time and the amount of registered cases. To see if we should reject or fail to reject our null hypothesis, we can use the p-value we got from fitting our linear regression above. Since our p-value for the growth estimation is 0.0327 which is less than 0.05, we typically say that this estimation is statistically significant. This means our data seems the show the alternative hypothesis as being much liklier. We reject our null hypothesis and accept our alternative hypothesis that there is some relationship between time and the amount of registered cases. The projected trend for the future is that more cases will continue to be registered each year.  
+
+# 4. Further Analysis
+Let's learn some more information about our data using the linear regression. The following code chunk creates a graph displaying the number of registered cases of age groups over time. To view the trend better, we include a linear regression for each age group. Note that we filter out null values from our graph.  
+
+```{r age_overtime, message = FALSE, warning = FALSE}
+age_Year <- data_tab %>%
+  select(Year = yearOfRegistration, Age = ageBroad) %>%
+  group_by(Year, Age) %>%
+  filter(!is.na(Age))%>%
+  summarize(n = n())
+
+graph <- age_Year %>%
+  ggplot(aes(fill = Age, x = Year, y = n)) +
+  geom_point(aes(color = Age))+
+  geom_smooth(method = lm) +
+  labs(title = "Trends of Registered Age Groups Over Time", x = "Registered Year", y = "Number of Cases")
+graph
+```
+
+Looking at the graph, there is an upward trend in the number of reported cases for all age intervals. Meanwhile, the registered cases of underage victims from ages 9 to 17 and victims from ages 30 to 38 are increasing at a faster rate than other age groups.
+
+# Final Thoughts
+Although it is very difficult to gather a lot of representative data on human trafficking due to the hidden and sensitive nature of the crime, we have seen how the data science pipeline can still make great use of what we do have. For example, while an increase in registered cases does not necessarily indicate a drastic increase in trafficking, it can indicate an improvement in establishing contact with victims whether it is because more people are becoming aware of the trafficking hotline or for other reasons. Noticing that the number of registered cases for older age groups is not growing nearly as fast as younger age groups might indicate more difficulty in identifying older victims. Regardless, making sense of data plays a significant role in resource allocation and the planning of strategies to combat human trafficking.
+
+
+
