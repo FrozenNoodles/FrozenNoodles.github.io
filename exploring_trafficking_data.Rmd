@@ -7,6 +7,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 ### Data Source: The Counter Trafficking Data Collaborative
 ### Audrey Tarn, Jiaming Yao
+### May 2020
 
 # Introduction
 From the United Nations, human trafficking is the "recruitment, transportation, transfer, harbouring or receipt of persons" through the "threat or use of force ... for the purpose of exploitation" (https://www.unodc.org/unodc/en/human-trafficking/what-is-human-trafficking.html). While it is a rampant issue that touches many aspects of all of our lives, there are many misconceptions about it which often hinders our reaction to it. On the other hand, its complexity makes it very difficult to document to grasp a clear picture. One example is in data collection. Nevertheless, organizations like Polaris, who also runs the national human trafficking hotline in the United States, continue to gather as much data as possible which have still been quite revealing. You can read more about Polaris at https://polarisproject.org/ and learn about common human trafficking misconceptions at https://polarisproject.org/myths-facts-and-statistics/.  
