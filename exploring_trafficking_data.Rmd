@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # Introduction
 From the United Nations, human trafficking is the "recruitment, transportation, transfer, harbouring or receipt of persons" through the "threat or use of force ... for the purpose of exploitation" (https://www.unodc.org/unodc/en/human-trafficking/what-is-human-trafficking.html). While it is a rampant issue that touches many aspects of all of our lives, there are many misconceptions about it which often hinders our reaction to it. On the other hand, its complexity makes it very difficult to document to grasp a clear picture. One example is in data collection. Nevertheless, organizations like Polaris, who also runs the national human trafficking hotline in the United States, continue to gather as much data as possible which have still been quite revealing. You can read more about Polaris at https://polarisproject.org/ and learn about common human trafficking misconceptions at https://polarisproject.org/myths-facts-and-statistics/.  
 
-In this tutorial, we will walk through a data science pipeline to learn some information from the data collected by the Counter Trafficking Data Collaborative, a collaborative effort that includes organizations like Polaris, the International Organization for Migration, and Liberty Shared.  
+In this tutorial, we will walk through a data science pipeline in R to learn some information from the data collected by the Counter Trafficking Data Collaborative, a collaborative effort that includes organizations like Polaris, the International Organization for Migration, and Liberty Shared.  
 
 # Table of Contents  
 1. Data Preparation  
@@ -46,10 +46,10 @@ head(data, n = 10)
 ```
 
 ### 1.4 Tidying Data
-Luckily for us, our dataset is quite neat which is often not the case. For this tutorial, we will only look at time, gender, age ranges, majority status when first registered and assisted, if the victim was sexually exploited, and different ways individuals were exploited for labor. We will trim down our dataset and only keep the columns we need. 
+Luckily for us, our dataset is quite neat which is often not the case. For this tutorial, we will only look at time, gender, age ranges, and different ways individuals were exploited for labor. We will trim down our dataset and only keep the columns we need. 
 ```{r drop_cols}
 data_tab <- data %>%
-  select("yearOfRegistration", "gender", "ageBroad", "majorityStatus", "isSexualExploit", "typeOfLabourAgriculture", "typeOfLabourAquafarming", "typeOfLabourBegging", "typeOfLabourConstruction", "typeOfLabourDomesticWork", "typeOfLabourHospitality", "typeOfLabourManufacturing", "typeOfLabourPeddling")
+  select("yearOfRegistration", "gender", "ageBroad", "typeOfLabourAgriculture", "typeOfLabourAquafarming", "typeOfLabourBegging", "typeOfLabourConstruction", "typeOfLabourDomesticWork", "typeOfLabourHospitality", "typeOfLabourManufacturing", "typeOfLabourPeddling")
 head(data_tab, n = 10)
 ```
 You may have noticed -99 appearing in many entries. In this case, this stands for missing data. Instead of keeping an ambiguous number, we will change it to "NA".
@@ -79,7 +79,7 @@ graph <- gender_year %>%
 graph
 ```
 
-We can see that in most years, more female cases are being registered than male cases. However, in the years 2010, 2012, and 2013 there was almost an equal amount of reporting between these two genders. While at face value it may seem like there are more female victims of trafficking than male victims, it is important to keep in mind the many external variables beyond our control. For example, if male victims are for some reason less likely to call the trafficking hotline, the data contributed by Polaris could be more skewed towards female victims which can skew the overall data.  The fact that there is no male registered cases in year 2002, 2004, 2019 is quite alarming.
+We can see that in most years, more female cases are being registered than male cases. However, in the years 2010, 2012, and 2013 there was almost an equal amount of reporting between these two genders. While at face value it may seem like there are more female victims of trafficking than male victims, it is important to keep in mind the many external variables beyond our control. For example, if male victims are for some reason less likely to call the trafficking hotline, the data contributed by Polaris could be more skewed towards female victims which can skew the overall data.  The fact that there are no male registered cases in year 2002, 2004, 2019 is quite alarming.
 
 Let's look at the exact number of registered cases without normalizing them.
 ```{r gender_overtime2}
@@ -90,7 +90,7 @@ denormalized <- gender_year %>%
 denormalized
 ```
 
-Combined with the previous graph, we can see there is a steady increase in the number of reported female victims and a spike in cases in 2016. The spike may also reflect the fact that the data is incomplete, and there are a lot more unreported cases.
+We can see there is a steady increase in the number of reported female victims and a spike in reported cases in 2016.
 
 ### 2.2 Comparing Gender in Different Labor Sectors
 Now we would like to see how registered victims of labor exploitation vary in gender by field. We will build upon what we've learned previously and create a separate graph for each labor field.
